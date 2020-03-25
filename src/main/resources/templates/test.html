@@ -1,0 +1,52 @@
+<html>
+<head>
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    <meta http-equiv="Content-Type" content="multipart/form-data">
+</head>
+<body>
+<form enctype="multipart/form-data">
+    <input type="file" id="file"/>
+</form>
+
+<button style="width: 100px" id="upload" >上传</button>
+<script>
+
+$(document).ready(function () {
+    $('#upload').click(function () {
+        console.log(document.getElementById("file").files[0])
+        $.ajax({
+            url:'http://localhost:7777/auth/login?loginname=admin&password=21232F297A57A5A743894A0E4A801FC3',
+            type: 'Get',
+            success(d,s)
+            {
+                var formData = new FormData();
+                var authorization = d.obj.token;
+                formData.append("file", document.getElementById("file").files[0]);
+
+                $.ajax({
+                    url: 'http://127.0.0.1:7777/api/fileUpload',
+                    type: 'POST',
+                    headers:
+                        {
+                            "Content-Type":"application/x-www-form-urlencoded",
+                            "Authorization":authorization
+                        },
+                    processData: false,   // jQuery不要去处理发送的数据
+                    contentType: false,   // jQuery不要去设置Content-Type请求头
+                    data: formData,
+                    success: function (d, s) {
+                        console.log(d, s);
+                    },
+                    error: function (d, s) {
+                        console.log(d, s);
+                    }
+                })
+            }
+        })
+
+
+
+    });
+});  </script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+{
+  "uestc75879":
+  {
+    "DaoruAppId":"cli_9eddc5e5ca6e100e",
+    "DaoruSecret":"Gghr8K2NSRYqFg8eP1hJDdmqUWocFB81",
+    "AppId": "cli_9edf7a8868f1100d",
+    "AppSecret":"cac38emumGiXVSNrehwj0gJPurT8tMtl",
+    "BotOwner": "",
+    "IsuseMobile":"false",
+    "remarks":"成电机器人，导入应用和机器人应用"
+  },
+
+  "uestc75880":
+  {
+    "DaoruAppId":"",
+    "DaoruSecret":"",
+    "AppId": "cli_9ec27db288e8900d",
+    "AppSecret":"7i00x6KjBfoNV7wE3bpojcLSVEcjzIxl",
+    "BotOwner": "",
+    "IsuseMobile":"false",
+    "remarks":"成电学堂应用仅用户获取用户信息"
+  },
+
+  "rssapplication124":
+  {
+    "DaoruAppId":"",
+    "DaoruSecret":"",
+    "AppId": "cli_9eddc5e5ca6e100e",
+    "AppSecret":"Gghr8K2NSRYqFg8eP1hJDdmqUWocFB81",
+    "BotOwner": "",
+    "IsuseMobile":"false",
+    "remarks":"成电rss订阅事件对应"
+  },
+
+  "nankai234235":
+  {
+      "DaoruAppId": "cli_9edff40664b0500e",
+      "DaoruSecret": "DAVEWDLAEOI8I6WOdrFYZ1dmi7d20dXz",
+      "AppId": "cli_9edff40664b0500e",
+      "AppSecret": "DAVEWDLAEOI8I6WOdrFYZ1dmi7d20dXz",
+      "BotOwner": "",
+      "IsuseMobile":"true"
+  },
+  "dbjy3214":
+  {
+    "DaoruAppId":"cli_9eecf95718bd100d",
+    "DaoruSecret":"lyrdVJ2xSQKR07kjK04EGddlr7zLVZoc",
+    "AppId": "cli_9eecf887b7ff900e",
+    "AppSecret":"tStLZdZN7NQYFVcriY8SZeQtCMhQMg0q",
+    "BotOwner": "",
+    "IsuseMobile":"true"
+  },
+  "cbgfsyb123453":
+  {
+    "DaoruAppId":"cli_9ee883a7b0be900e",
+    "DaoruSecret":"cj9EAHNg3iP0eXr0rdFwch55g7qomfAr",
+    "AppId": "cli_9ee8e97e372a500e",
+    "AppSecret":"K8GG1klpWv9qCNpEHpoNSek6iniljaEf",
+    "BotOwner": "",
+    "IsuseMobile":"true"
+  }
+}
+
