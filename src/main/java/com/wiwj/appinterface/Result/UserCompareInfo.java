@@ -8,6 +8,7 @@ import javax.persistence.Table;
 @Entity
 @Table(name="fei_user")
 public class UserCompareInfo {
+    //数据库中的id
     @Id
     @Column(name="EMPL_ID")
     private String EMPL_ID;
@@ -29,6 +30,17 @@ public class UserCompareInfo {
     private String HR_STATUS;
     @Column(name="C_QUARTERS_ID")
     private String C_QUARTERS_ID;
+    //飞书返回的id
+    @Column(name="user_id")
+    private String user_id;
+
+    public String getUser_id() {
+        return user_id;
+    }
+
+    public void setUser_id(String user_id) {
+        this.user_id = user_id;
+    }
 
     public String getEMPL_ID() {
         return EMPL_ID;

@@ -10,7 +10,7 @@ public class LzyApp {
     @Value("${lzy.app_secret}")
     private String appSecret;
     @Value("${feishu.jobpost_key}")
-    private String jobpost_key;
+    public String jobpost_key;
 
     public String getJobpost_key() {
         return jobpost_key;

@@ -26,5 +26,5 @@ public interface DepartmentService {
 
     FeiShuDepartment getFeishuDepartment(DepartmentInfo departmentInfo, String PaDeptId, String TenanAccessToken) throws Exception;
 
-    void addDepartmentByLevelNew(int level,String fdDate,List<FeiShuDepartment> addList,List<DeptCompareInfo> addDeptCompareInfos,List<FeiShuDepartment> updateList,List<DeptCompareInfo> updateDeptCompareInfos,List<FeiShuDepartment> deleteList,List<DeptCompareInfo> deleteDeptCompareInfos,List<DepartmentInfo> departmentInfos,String TenanAccessToken)throws Exception;
+    void addDepartmentByLevelNew(int level,String fdDate,List<FeiShuDepartment> addList,List<DeptCompareInfo> addDeptCompareInfos,List<FeiShuDepartment> updateList,List<DeptCompareInfo> updateDeptCompareInfos,List<FeiShuDepartment> deleteList,List<DeptCompareInfo> deleteDeptCompareInfos,List<DepartmentInfo> departmentInfos)throws Exception;
     }

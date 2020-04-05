@@ -10,14 +10,40 @@ public class SimpleFeishuUser {
     private String name;
     private String email;
     private String mobile;
-    private String[] departments;
-    private int gender;
-    private String leader_user_id;
-    private String user_id;
+    private String[] department_ids;
+    private String gender;
+    private String leader_employee_id;
+    //数据库中的id
+    private String EMPL_ID;
     private String setId;
     private String HR_STATUS;
     private String C_QUARTERS_ID;
     private String post;
+    private String myUserId;
+
+    public String getMyUserId() {
+        return myUserId;
+    }
+
+    public void setMyUserId(String myUserId) {
+        this.myUserId = myUserId;
+    }
+
+    public String[] getDepartment_ids() {
+        return department_ids;
+    }
+
+    public void setDepartment_ids(String[] department_ids) {
+        this.department_ids = department_ids;
+    }
+
+    public String getEMPL_ID() {
+        return EMPL_ID;
+    }
+
+    public void setEMPL_ID(String EMPL_ID) {
+        this.EMPL_ID = EMPL_ID;
+    }
 
     public String getPost() {
         return post;
@@ -52,25 +78,20 @@ public class SimpleFeishuUser {
     }
 
     public SimpleFeishuUser(){}
-//    public String toJson(){
-//        String re="{\"gender\":2,\"employee_id\":\"115407\",\"mobile\":\"13771983913\",\"name\":\"李曼\",\"leader_employee_id\":\"null\",\"department_ids\":[\"1000000061\"],\"email\":\"null\"}";
-//        String re1="{";
-//        re1+="\"gender\":"+gender+",";
-//        re1+="\"employee_id\":"
-//    }
-    public SimpleFeishuUser(String name, String email, String mobile, String department_id, String gender, String leader_user_id, String user_id,String setId,String HR_STATUS,String C_QUARTERS_ID,String post) {
+
+    public SimpleFeishuUser(String name, String email, String mobile, String department_id, String gender, String leader_employee_id, String EMPL_ID,String setId,String HR_STATUS,String C_QUARTERS_ID,String post) {
         this.name = name;
         this.email = email;
         this.mobile = mobile;
-        this.departments=new String[1];
-        this.departments[0] = department_id;
+        this.department_ids=new String[1];
+        this.department_ids[0] = department_id;
         if(StringUtils.equals("M",gender)){
-            this.gender=1;
+            this.gender="1";
         }else{
-            this.gender =2;
+            this.gender ="2";
         }
-        this.leader_user_id = leader_user_id;
-        this.user_id = user_id;
+        this.leader_employee_id = leader_employee_id;
+        this.EMPL_ID = EMPL_ID;
         this.setId=setId;
         this.HR_STATUS=HR_STATUS;
         this.C_QUARTERS_ID=C_QUARTERS_ID;
@@ -101,35 +122,19 @@ public class SimpleFeishuUser {
         this.mobile = mobile;
     }
 
-    public String[] getDepartments() {
-        return departments;
-    }
-
-    public void setDepartments(String[] departments) {
-        this.departments = departments;
-    }
-
-    public int getGender() {
+    public String getGender() {
         return gender;
     }
 
-    public void setGender(int gender) {
+    public void setGender(String gender) {
         this.gender = gender;
     }
 
-    public String getLeader_user_id() {
-        return leader_user_id;
+    public String getLeader_employee_id() {
+        return leader_employee_id;
     }
 
-    public void setLeader_user_id(String leader_user_id) {
-        this.leader_user_id = leader_user_id;
-    }
-
-    public String getUser_id() {
-        return user_id;
-    }
-
-    public void setUser_id(String user_id) {
-        this.user_id = user_id;
+    public void setLeader_employee_id(String leader_employee_id) {
+        this.leader_employee_id = leader_employee_id;
     }
 }

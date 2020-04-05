@@ -56,45 +56,56 @@ public class DepartmentServiceImpl implements DepartmentService {
      * @param addList
      * @param updateList
      * @param deleteList
-     * @param TenanAccessToken
      * @return
      * @throws Exception
      */
-    public void addDepartmentByLevelNew(int level,String fdDate,List<FeiShuDepartment> addList,List<DeptCompareInfo> addDeptCompareInfos,List<FeiShuDepartment> updateList,List<DeptCompareInfo> updateDeptCompareInfos,List<FeiShuDepartment> deleteList,List<DeptCompareInfo> deleteDeptCompareInfos,List<DepartmentInfo> departmentInfos,String TenanAccessToken)throws Exception{
+    public void addDepartmentByLevelNew(int level,String fdDate,List<FeiShuDepartment> addList,List<DeptCompareInfo> addDeptCompareInfos,List<FeiShuDepartment> updateList,List<DeptCompareInfo> updateDeptCompareInfos,List<FeiShuDepartment> deleteList,List<DeptCompareInfo> deleteDeptCompareInfos,List<DepartmentInfo> departmentInfos)throws Exception{
+        String TenanAccessToken =getTenanAccessToken();
         //该树层级部门树信息
         if(StringUtils.isEmpty(fdDate)){//若该参数为空，则查询所有时间
             fdDate="1000-11-15";
         }
-        List<DepartmentTreeInfo> deptTreeList=departmentTreeInfoRepository.findByTreeLevel(level+"",fdDate);
+        log.info("部门新增，修改信息获取开始");
+        List<DepartmentTreeInfo> deptTreeList=departmentTreeInfoRepository.findByTreeLevel(level+"");
+        log.info("部门树数量ListSize:"+deptTreeList.size());
         for(DepartmentTreeInfo deptTree:deptTreeList) {
             String setId = deptTree.getSET_ID();
             String deptId = deptTree.getTREE_NODE();
             //该部门树对应的有效的部门信息
-            DepartmentInfo departmentInfo = departmentInfoRepository.findByDeptIdAndSetId(deptId, setId);
-            if (departmentInfo != null) {//当OA部门表中存在该部门时
+            List<DepartmentInfo> departmentInfoList = departmentInfoRepository.findByDeptIdAndSetId(deptId, setId);
+            if (departmentInfoList.size() != 0) {//当OA部门表中存在该部门时
+                //获取第一个对象
+                DepartmentInfo departmentInfo=departmentInfoList.get(0);
                 String PaDeptId = deptTree.getPARENT_NODE_NAME();
                 //查自建记录表
-                DeptCompareInfo deptCompareInfo = deptCompareInfoRepository.findByDeptIdAndSetId(deptId, setId);
+                List<DeptCompareInfo> deptCompareInfos = deptCompareInfoRepository.findByDeptIdAndSetId(deptId, setId);
                 //创建飞书部门类
                 FeiShuDepartment feiShuDepartment = getFeishuDepartment(departmentInfo, PaDeptId, TenanAccessToken);
-                if (deptCompareInfo == null) {//记录表中没有记录
-                    //根据id查飞书系统中部门信息
-                    String re = getDeptDetail(feiShuDepartment.getId(), TenanAccessToken);
-                    if ((!StringUtils.isEmpty(re)) && (!StringUtils.equals("null", re))) {//飞书中部门存在
-                            //添加到部门更新表中
-                            updateList.add(feiShuDepartment);
-                            departmentInfos.add(departmentInfo);
-                            //反写结果，更新自建记录表信息
-                            updateDeptCompareInfos.add(doChangeDeptInfo(departmentInfo, PaDeptId));
-                    } else {//飞书中部门不存在
-                        //默认不创建部门群
-                            //添加到新增部门列表
-                            addList.add(feiShuDepartment);
-                            //反写结果，向自建记录表添加信息
-                            addDeptCompareInfos.add(doChangeDeptInfo(departmentInfo, PaDeptId));
-                    }
+                if (deptCompareInfos.size() == 0) {//记录表中没有记录
+                    //添加到新增部门列表
+                    log.info("添加到deptaddlist："+JSON.toJSONString(feiShuDepartment));
+                    addList.add(feiShuDepartment);
+                    //反写结果，向自建记录表添加信息
+                    addDeptCompareInfos.add(doChangeDeptInfo(departmentInfo, PaDeptId));
+//                    //根据id查飞书系统中部门信息
+//                    String re = getDeptDetail(feiShuDepartment.getId(), TenanAccessToken);
+//                    if ((!StringUtils.isEmpty(re)) && (!StringUtils.equals("null", re))) {//飞书中部门存在
+//                        //添加到部门更新表中
+//                        updateList.add(feiShuDepartment);
+//                        departmentInfos.add(departmentInfo);
+//                        //反写结果，更新自建记录表信息
+//                        updateDeptCompareInfos.add(doChangeDeptInfo(departmentInfo, PaDeptId));
+//                    } else {//飞书中部门不存在
+//                        //默认不创建部门群
+//                        //添加到新增部门列表
+//                        log.info("添加到deptaddlist："+JSON.toJSONString(feiShuDepartment));
+//                        addList.add(feiShuDepartment);
+//                        //反写结果，向自建记录表添加信息
+//                        addDeptCompareInfos.add(doChangeDeptInfo(departmentInfo, PaDeptId));
+//                    }
                 } else {//记录表中有记录
                     //比较部门信息是否一致
+                    DeptCompareInfo deptCompareInfo=deptCompareInfos.get(0);
                     boolean flag = deptComparePreperties(deptCompareInfo, departmentInfo, PaDeptId);
                     //若相同则结束，若不同
                     if (!flag) {
@@ -106,19 +117,10 @@ public class DepartmentServiceImpl implements DepartmentService {
                 }
             }
         }
-        //获取deleteList
-        List<DeptCompareInfo> deptDeleteListInMytest= deptCompareInfoRepository.findAll();
-        for(DeptCompareInfo deptCompareInfo:deptDeleteListInMytest){
-            DepartmentInfo departmentInfo=departmentInfoRepository.findByDeptIdAndSetIdWithoutStatus(deptCompareInfo.getDEPT_ID(),deptCompareInfo.getSET_ID());
-            //OA表中不存在或者失效则加入删除表
-            if(departmentInfo==null||StringUtils.equals(departmentInfo.getEFF_STATUS(),"I")){
-                FeiShuDepartment feiShuDepartment=getFeishuDepartment(departmentInfo,deptCompareInfo.getPARENT_NODE_NAME(),TenanAccessToken);
-                deleteList.add(feiShuDepartment);
-                deleteDeptCompareInfos.add(deptCompareInfo);
-            }
-        }
+        log.info("部门新增，修改信息获取结束");
         //新增部门
         //list切片
+        log.info("开始新增部门");
         List<List<FeiShuDepartment>> deptAddLists= Lists.partition(addList,999);
         for(List<FeiShuDepartment> smallAddList:deptAddLists) {
             JSONArray addArray = JSONArray.parseArray(JSON.toJSONString(smallAddList));
@@ -131,18 +133,20 @@ public class DepartmentServiceImpl implements DepartmentService {
         for(DeptCompareInfo deptCompareInfo:addDeptCompareInfos){
             deptCompareInfoRepository.save(deptCompareInfo);
         }
+        log.info("结束新增部门");
     }
     /**
      * 通过现有信息创建飞书部门类
      * @param departmentInfo
      * @param PaDeptId
-     * @param TenanAccessToken
+     *
      */
-    public FeiShuDepartment getFeishuDepartment(DepartmentInfo departmentInfo, String PaDeptId, String TenanAccessToken) throws Exception{
+    public FeiShuDepartment getFeishuDepartment(DepartmentInfo departmentInfo, String PaDeptId,String TenanAccessToken) throws Exception{
+
         FeiShuDepartment feiShuDepartment = new FeiShuDepartment();
         if (departmentInfo != null) {
             feiShuDepartment.setId(departmentInfo.getSET_ID() + departmentInfo.getDEPT_ID());//存id
-            feiShuDepartment.setName(departmentInfo.getSET_ID() + departmentInfo.getDESCR());//存name
+            feiShuDepartment.setName( departmentInfo.getDESCR());//存name
             if ((!StringUtils.isEmpty(PaDeptId)) && (!StringUtils.equals("null", PaDeptId))) {
                 feiShuDepartment.setParent_id(departmentInfo.getSET_ID() + PaDeptId);
             } else {
@@ -271,9 +275,8 @@ public class DepartmentServiceImpl implements DepartmentService {
      */
     @Override
     public int getTreeLevel() throws Exception {
-        int[] re=departmentTreeInfoRepository.GetMaxLevel();
-        int level=re.length;
-        return level;
+        int re=departmentTreeInfoRepository.GetMaxLevel();
+        return re;
     }
 
     /**

@@ -8,6 +8,8 @@ import com.wiwj.appinterface.Result.FeiShuDepartment;
 import com.wiwj.appinterface.Result.SimpleFeishuUser;
 import com.wiwj.appinterface.ToolUtil.HttpHelper;
 import com.wiwj.appinterface.ToolUtil.LzyApp;
+import net.jodah.expiringmap.ExpirationPolicy;
+import net.jodah.expiringmap.ExpiringMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +20,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.concurrent.TimeUnit;
 
 
 /****
@@ -38,34 +40,129 @@ public class FeiShuApi {
      * 获取tenant_access_token
      * @return
      */
+    /**
+     * ExpirationPolicy.CREATED：在每次更新元素时，过期时间同时清零。
+     * ExpirationPolicy.ACCESSED：在每次访问元素时，过期时间同时清零。
+     */
+    //用于建群机器人拿取code 获取的当前登录用户信息
+    static ExpiringMap<String,String> TenantAccessTokenMap = ExpiringMap.builder()
+            .maxSize(50000)
+            .expirationPolicy(ExpirationPolicy.CREATED)
+            .variableExpiration()
+            .build();
+    //用于建群机器人拿取code 获取的当前登录用户信息
+    static ExpiringMap<String,String> AppAccessTokenMap = ExpiringMap.builder()
+            .maxSize(50000)
+            .expirationPolicy(ExpirationPolicy.CREATED)
+            .variableExpiration()
+            .build();
 
-    public String GetTenantAccessToken(String AppId,String AppSecret) throws Exception {
+    /*****
+     * 获取tenant_access_token
+     * @return
+     */
+    public String GetTenantAccessToken(String AppId, String AppSecret) throws Exception {
 
         log.debug("请求Tenantaccesstoken：Appid："+AppId);
         log.debug("请求Tenantaccesstoken：AppSecret："+AppSecret);
         try{
-            for(int sendtime = 0;sendtime<3;sendtime++){
-                String Url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal/";
-                JSONObject parm = new JSONObject();
-                parm.put("app_id", AppId);
-                parm.put("app_secret", AppSecret);
-                HttpHeaders header = new HttpHeaders();
-                JSONObject jsonobj = HttpHelper.sendPostRequest(Url, parm, header);
-                if (jsonobj.get("code").toString().equals("0")) {//成功
-                    return jsonobj.get("tenant_access_token").toString();
-                }
-                else
-                {
-                    log.error("获取tenant_access_token失败："+jsonobj.toString());
-
+            String TenantAccessToken = TenantAccessTokenMap.get(AppId);
+            if(TenantAccessToken == null)
+            {
+                log.debug("不存在TenantAccessToken,向服务器请求");
+                for(int sendtime = 0;sendtime<3;sendtime++) {
+                    String Url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal/";
+                    JSONObject parm = new JSONObject();
+                    parm.put("app_id", AppId);
+                    parm.put("app_secret", AppSecret);
+                    HttpHeaders header = new HttpHeaders();
+                    JSONObject jsonobj = HttpHelper.sendPostRequest(Url, parm, header);
+                    if (jsonobj.get("code").toString().equals("0")) {//成功
+                        TenantAccessTokenMap.put(AppId,jsonobj.get("tenant_access_token").toString(),jsonobj.getLong("expire"),TimeUnit.SECONDS);
+                        return jsonobj.get("tenant_access_token").toString();
+                    } else {
+                        log.error("获取tenant_access_token失败：" + jsonobj.toString());
+                    }
                 }
             }
-            throw new MyException(StatusCode.error_group_accesstoken,null,null);
+            else
+            {
+                log.info("Map存在TenantAccessToken:"+TenantAccessToken+"||"+"缓存总时间为："+TenantAccessTokenMap.getExpiration(AppId)+"||缓存时间剩余："+TenantAccessTokenMap.getExpectedExpiration(AppId)); ;
+                return TenantAccessToken;
+            }
+            //throw new MyException(StatusCode.error_group_accesstoken,null,null);
+            return "";
         }
         catch(Exception ex) {
             throw  ex;
         }
     }
+    /*****
+     * 获取app_access_token
+     * @return
+     */
+    public String GetAppAccessToken(String AppId, String AppSecret) throws  Exception {
+
+        log.debug("请求appaccesstoken：Appid："+AppId);
+        log.debug("请求appaccesstoken：AppSecret："+AppSecret);
+        try{
+            String AppAccessToken = AppAccessTokenMap.get(AppId);
+            if(AppAccessToken == null) {
+                log.debug("不存在AppAccessTokenMap,向服务器请求");
+                for (int sendtime = 0; sendtime < 3; sendtime++) {
+                    String Url = "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal/";
+                    JSONObject parm = new JSONObject();
+                    parm.put("app_id", AppId);
+                    parm.put("app_secret", AppSecret);
+                    HttpHeaders header = new HttpHeaders();
+                    JSONObject jsonobj = HttpHelper.sendPostRequest(Url, parm, header);
+                    if (jsonobj.get("code").toString().equals("0")) {//成功
+                        AppAccessTokenMap.put(AppId,jsonobj.get("app_access_token").toString(),jsonobj.getLong("expire"), TimeUnit.SECONDS);
+                        return jsonobj.get("app_access_token").toString();
+                    } else {
+                        log.error("获取app_access_token失败：" + jsonobj.toString());
+
+                    }
+                }
+            }
+            else
+            {
+                log.info("Map存在AppAccessTokenMap:"+AppAccessToken+"||"+"缓存总时间为："+AppAccessTokenMap.getExpiration(AppId)+"||缓存时间剩余："+AppAccessTokenMap.getExpectedExpiration(AppId));
+                return AppAccessToken;
+            }
+            throw new MyException(StatusCode.error_group_accesstoken,null,null);
+        }
+        catch(Exception ex) {
+            throw ex;
+        }
+    }
+//    public String GetTenantAccessToken(String AppId,String AppSecret) throws Exception {
+//
+//        log.debug("请求Tenantaccesstoken：Appid："+AppId);
+//        log.debug("请求Tenantaccesstoken：AppSecret："+AppSecret);
+//        try{
+//            for(int sendtime = 0;sendtime<3;sendtime++){
+//                String Url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal/";
+//                JSONObject parm = new JSONObject();
+//                parm.put("app_id", AppId);
+//                parm.put("app_secret", AppSecret);
+//                HttpHeaders header = new HttpHeaders();
+//                JSONObject jsonobj = HttpHelper.sendPostRequest(Url, parm, header);
+//                if (jsonobj.get("code").toString().equals("0")) {//成功
+//                    return jsonobj.get("tenant_access_token").toString();
+//                }
+//                else
+//                {
+//                    log.error("获取tenant_access_token失败："+jsonobj.toString());
+//
+//                }
+//            }
+//            throw new MyException(StatusCode.error_group_accesstoken,null,null);
+//        }
+//        catch(Exception ex) {
+//            throw  ex;
+//        }
+//    }
     /*****
      * 组装url
      * @param map
@@ -89,37 +186,37 @@ public class FeiShuApi {
     }
 
 
-    /*****
-     * 获取app_access_token
-     * @return
-     */
-    public String GetAppAccessToken(String AppId,String AppSecret) throws  Exception {
-
-        log.debug("请求appaccesstoken：Appid："+AppId);
-        log.debug("请求appaccesstoken：AppSecret："+AppSecret);
-        try{
-            for(int sendtime = 0;sendtime<3;sendtime++) {
-                String Url = "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal/";
-                JSONObject parm = new JSONObject();
-                parm.put("app_id", AppId);
-                parm.put("app_secret", AppSecret);
-                HttpHeaders header = new HttpHeaders();
-                JSONObject jsonobj = HttpHelper.sendPostRequest(Url, parm, header);
-                if (jsonobj.get("code").toString().equals("0")) {//成功
-                    return jsonobj.get("app_access_token").toString();
-                }
-                else
-                {
-                    log.error("获取app_access_token失败："+jsonobj.toString());
-
-                }
-            }
-            throw new MyException(StatusCode.error_group_accesstoken,null,null);
-        }
-        catch(Exception ex) {
-            throw ex;
-        }
-    }
+//    /*****
+//     * 获取app_access_token
+//     * @return
+//     */
+//    public String GetAppAccessToken(String AppId,String AppSecret) throws  Exception {
+//
+//        log.debug("请求appaccesstoken：Appid："+AppId);
+//        log.debug("请求appaccesstoken：AppSecret："+AppSecret);
+//        try{
+//            for(int sendtime = 0;sendtime<3;sendtime++) {
+//                String Url = "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal/";
+//                JSONObject parm = new JSONObject();
+//                parm.put("app_id", AppId);
+//                parm.put("app_secret", AppSecret);
+//                HttpHeaders header = new HttpHeaders();
+//                JSONObject jsonobj = HttpHelper.sendPostRequest(Url, parm, header);
+//                if (jsonobj.get("code").toString().equals("0")) {//成功
+//                    return jsonobj.get("app_access_token").toString();
+//                }
+//                else
+//                {
+//                    log.error("获取app_access_token失败："+jsonobj.toString());
+//
+//                }
+//            }
+//            throw new MyException(StatusCode.error_group_accesstoken,null,null);
+//        }
+//        catch(Exception ex) {
+//            throw ex;
+//        }
+//    }
 
     /**
      * 获得部门下所有员工
@@ -166,7 +263,8 @@ public class FeiShuApi {
             JSONObject jsonObj  =  HttpHelper.sendPostRequest(Url, json,header);
             if(!jsonObj.get("code").toString().equals("0"))
             {
-                throw  new MyException(StatusCode.error_delete_user,jsonObj.toString(),null);
+                //throw  new MyException(StatusCode.error_delete_user,jsonObj.toString(),null);
+                log.error("删除人员错误，返回结果："+jsonObj.toString());
             }
 
 
@@ -175,7 +273,36 @@ public class FeiShuApi {
         }
     }
 
+    /**
+     * 批量新增用户
+     * @param AccessToken
+     * @param feishuUser
+     * @return employeeId
+     * @throws Exception
+     */
+    public String addUser(String AccessToken, JSONObject feishuUser) throws  Exception {
+        try {
+            HttpHeaders header = new HttpHeaders();
+            header.add("Authorization", "Bearer "+AccessToken);
+            String Url = "https://open.feishu.cn/open-apis/contact/v1/user/add";
+            JSONObject jsonObj  =  HttpHelper.sendPostRequest(Url, feishuUser,header);
+            if(!jsonObj.get("code").toString().equals("0"))
+            {
+                log.error("新增人员失败：返回结果："+jsonObj.toString());
+                //throw  new MyException(StatusCode.error_batchadd_user,jsonObj.toString(),null);
+                return "";
+            }
+            else
+            {
+                log.info("employeeId:"+jsonObj.getJSONObject("data").getJSONObject("user_info").get("employee_id").toString());
+                return  jsonObj.getJSONObject("data").getJSONObject("user_info").get("employee_id").toString();
 
+            }
+
+        } catch (Exception ex) {
+            throw ex;
+        }
+    }
 
     /**
      * 批量新增用户
@@ -382,16 +509,18 @@ public class FeiShuApi {
             }else{
                 json.put("name","无名");
             }
-            json.put("employee_id", simpleFeishuUser.getUser_id());
-            json.put("department_ids",simpleFeishuUser.getDepartments());
-            if(simpleFeishuUser.getGender()!=0) {
+            json.put("employee_id", simpleFeishuUser.getMyUserId());
+            json.put("department_ids",simpleFeishuUser.getDepartment_ids());
+            if(!StringUtils.equals(simpleFeishuUser.getGender(),"0")) {
                 json.put("gender", simpleFeishuUser.getGender());
             }
             String Url = "https://open.feishu.cn/open-apis/contact/v1/user/update";
             JSONObject jsonObj  =  HttpHelper.sendPostRequest(Url, json,header);
             if(!jsonObj.get("code").toString().equals("0"))
             {
-                throw  new MyException(StatusCode.error_update_department,jsonObj.toString(),null);
+                log.error("修改人员错误：返回结果："+jsonObj.toString());
+                //throw  new MyException(StatusCode.error_update_department,jsonObj.toString(),null);
+                return jsonObj.toString();
             }
             else
             {
@@ -415,10 +544,10 @@ public class FeiShuApi {
             HttpHeaders header = new HttpHeaders();
             header.add("Authorization", "Bearer "+AccessToken);
             JSONObject json = new JSONObject();
-            if((!StringUtils.isEmpty(simpleFeishuUser.getLeader_user_id()))&&(!StringUtils.equals("null",simpleFeishuUser.getLeader_user_id()))) {
-                json.put("leader_employee_id",simpleFeishuUser.getLeader_user_id());
+            if((!StringUtils.isEmpty(simpleFeishuUser.getLeader_employee_id()))&&(!StringUtils.equals("null",simpleFeishuUser.getLeader_employee_id()))) {
+                json.put("leader_employee_id",simpleFeishuUser.getLeader_employee_id());
             }
-            json.put("employee_id", simpleFeishuUser.getUser_id());
+            json.put("employee_id", simpleFeishuUser.getMyUserId());
             String Url = "https://open.feishu.cn/open-apis/contact/v1/user/update";
             JSONObject jsonObj  =  HttpHelper.sendPostRequest(Url, json,header);
             if(!jsonObj.get("code").toString().equals("0"))
@@ -492,7 +621,9 @@ public class FeiShuApi {
             JSONObject jsonObj  =  HttpHelper.sendPostRequest(Url, json,header);
             if(!jsonObj.get("code").toString().equals("0"))
             {
-                throw  new MyException(StatusCode.error_update_department,jsonObj.toString(),null);
+                //throw  new MyException(StatusCode.error_update_department,jsonObj.toString(),null);
+                log.error("修改部门失败：返回结果："+jsonObj.toString());
+                return "";
             }
             else
             {
@@ -546,7 +677,8 @@ public class FeiShuApi {
             JSONObject jsonObj  =  HttpHelper.sendPostRequest(Url, json,header);
             if(!jsonObj.get("code").toString().equals("0"))
             {
-                throw  new MyException(StatusCode.error_delete_department,jsonObj.toString(),null);
+                log.error("删除部门错误，返回结果："+jsonObj.toString());
+                //throw  new MyException(StatusCode.error_delete_department,jsonObj.toString(),null);
             }
 
         } catch (Exception ex) {
@@ -570,7 +702,9 @@ public class FeiShuApi {
             JSONObject jsonObj  =  HttpHelper.sendPostRequest(Url, json,header);
             if(!jsonObj.get("code").toString().equals("0"))
             {
-                throw  new MyException(StatusCode.error_batch_add_department,jsonObj.toString(),null);
+                //throw  new MyException(StatusCode.error_batch_add_department,jsonObj.toString(),null);
+                log.error("批量添加部门失败：返回结果："+jsonObj.toString());
+                return "";
             }
             else
             {
